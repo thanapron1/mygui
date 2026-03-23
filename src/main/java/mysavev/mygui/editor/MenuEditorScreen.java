@@ -11,6 +11,8 @@ import net.minecraft.world.item.Items;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.world.item.component.CustomModelData;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -51,14 +53,18 @@ public class MenuEditorScreen extends SimpleGui {
             ItemBuilder builder = new ItemBuilder(btn.getMaterial())
                     .setName(ColorUtil.parse(btn.getName()))
                     .setLoreStrings(btn.getLore())
+                    .setAmount(btn.getAmount())
+                    .setCustomModelData(btn.getCustomModelData())
+                    .setGlow(btn.isGlow())
+                    .setHeadTexture(btn.getHeadTexture())
                     .addLore("", "§e[Left] Edit", "§c[Right] Delete", "§7ID: " + btnId);
             
             for (int slot : btn.getSlots()) {
                 if (slot < rows * 9) {
                     this.setSlot(slot, builder.build(), (index, clickType, action) -> {
-                        ItemStack cursor = this.player.containerMenu.getCarried();
-                        if (!cursor.isEmpty()) {
-                             updateButtonFromItem(btn, cursor);
+                        ItemStack source = getSourceStack();
+                        if (!source.isEmpty()) {
+                             updateButtonFromItem(btn, source);
                              session.save();
                              render();
                              return;
@@ -99,13 +105,14 @@ public class MenuEditorScreen extends SimpleGui {
         List<String> lore = new ArrayList<>();
         
         ButtonModel newBtn;
-        ItemStack cursor = this.player.containerMenu.getCarried();
+        ItemStack cursor = getSourceStack();
 
         if (!cursor.isEmpty()) {
              String material = BuiltInRegistries.ITEM.getKey(cursor.getItem()).toString();
              String name = ColorUtil.serialize(cursor.getHoverName());
              lore.add("From Inventory");
              newBtn = new ButtonModel(material, name, lore, List.of(slot), new ArrayList<>());
+             updateButtonFromItem(newBtn, cursor);
         } else {
              lore.add("New button");
              newBtn = new ButtonModel("minecraft:stone", "New Button", lore, List.of(slot), new ArrayList<>());
@@ -121,10 +128,40 @@ public class MenuEditorScreen extends SimpleGui {
     private void updateButtonFromItem(ButtonModel btn, ItemStack stack) {
         btn.setMaterial(BuiltInRegistries.ITEM.getKey(stack.getItem()).toString());
         btn.setName(ColorUtil.serialize(stack.getHoverName()));
-        btn.setLore(new ArrayList<>()); 
+        btn.setAmount(stack.getCount());
+        
+        CustomModelData cmd = stack.get(DataComponents.CUSTOM_MODEL_DATA);
+        if (cmd != null) {
+            btn.setCustomModelData(cmd.value());
+        } else {
+            btn.setCustomModelData(null);
+        }
+        
+        // Glow if enchanted or explicit glow component
+        Boolean glint = stack.get(DataComponents.ENCHANTMENT_GLINT_OVERRIDE);
+        if (glint != null) {
+            btn.setGlow(glint);
+        } else {
+            btn.setGlow(stack.isEnchanted());
+        }
+
+        // Note: Preserving actions, resetting lore? 
+        // User probably expects the item to look like the one in inventory.
+        btn.setLore(new ArrayList<>());
         btn.getLore().add("Updated from inventory");
     }
 
+    private ItemStack getSourceStack() {
+        ItemStack cursor = this.player.containerMenu.getCarried();
+        if (!cursor.isEmpty()) {
+            return cursor;
+        }
+
+        int selected = this.player.getInventory().selected;
+        ItemStack selectedStack = this.player.getInventory().getItem(selected);
+        return selectedStack == null ? ItemStack.EMPTY : selectedStack;
+    }
+ 
     private static MenuType<?> getScreenType(int rows) {
         return switch (Math.min(rows, 6)) {
             case 1 -> MenuType.GENERIC_9x1;

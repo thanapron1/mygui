@@ -24,7 +24,11 @@ public class BaseMenu extends SimpleGui {
             try {
                 ItemBuilder builder = new ItemBuilder(btn.getMaterial())
                         .setName(ColorUtil.parse(btn.getName()))
-                        .setLoreStrings(btn.getLore());
+                        .setLoreStrings(btn.getLore())
+                        .setAmount(btn.getAmount())
+                        .setCustomModelData(btn.getCustomModelData())
+                        .setGlow(btn.isGlow())
+                        .setHeadTexture(btn.getHeadTexture());
                 
                 for (int slot : btn.getSlots()) {
                     if (slot >= 0 && slot < model.getRows() * 9) {
@@ -51,4 +55,3 @@ public class BaseMenu extends SimpleGui {
         };
     }
 }
-

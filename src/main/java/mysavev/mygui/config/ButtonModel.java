@@ -7,6 +7,10 @@ public class ButtonModel {
     private String material;
     private String name;
     private List<String> lore = new ArrayList<>();
+    private int amount = 1;
+    private Integer customModelData;
+    private boolean glow;
+    private String headTexture;
     private List<Integer> slots = new ArrayList<>();
     private List<String> actions = new ArrayList<>();
 
@@ -18,6 +22,40 @@ public class ButtonModel {
         this.lore = lore;
         this.slots = slots;
         this.actions = actions;
+        this.amount = 1;
+        this.glow = false;
+    }
+
+    public int getAmount() {
+        return amount;
+    }
+
+    public void setAmount(int amount) {
+        this.amount = amount;
+    }
+
+    public Integer getCustomModelData() {
+        return customModelData;
+    }
+
+    public void setCustomModelData(Integer customModelData) {
+        this.customModelData = customModelData;
+    }
+    
+    public boolean isGlow() {
+        return glow;
+    }
+
+    public void setGlow(boolean glow) {
+        this.glow = glow;
+    }
+
+    public String getHeadTexture() {
+        return headTexture;
+    }
+
+    public void setHeadTexture(String headTexture) {
+        this.headTexture = headTexture;
     }
 
     public String getMaterial() {
@@ -60,4 +98,3 @@ public class ButtonModel {
         this.actions = actions;
     }
 }
-

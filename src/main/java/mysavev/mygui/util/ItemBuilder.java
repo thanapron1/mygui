@@ -3,11 +3,16 @@ package mysavev.mygui.util;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.CustomModelData;
+import net.minecraft.world.item.component.ResolvableProfile;
 import net.minecraft.world.item.component.ItemLore;
 import net.minecraft.world.level.ItemLike;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 
+import com.mojang.authlib.GameProfile;
+import com.mojang.authlib.properties.Property;
+import java.util.UUID;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -63,6 +68,29 @@ public class ItemBuilder {
 
     public ItemBuilder setAmount(int amount) {
         this.stack.setCount(amount);
+        return this;
+    }
+
+    public ItemBuilder setCustomModelData(Integer data) {
+        if (data == null) {
+            this.stack.remove(DataComponents.CUSTOM_MODEL_DATA);
+        } else {
+            this.stack.set(DataComponents.CUSTOM_MODEL_DATA, new CustomModelData(data));
+        }
+        return this;
+    }
+
+    public ItemBuilder setGlow(boolean glow) {
+        this.stack.set(DataComponents.ENCHANTMENT_GLINT_OVERRIDE, glow);
+        return this;
+    }
+
+    public ItemBuilder setHeadTexture(String textureBase64) {
+        if (textureBase64 == null || textureBase64.isEmpty()) return this;
+        
+        GameProfile profile = new GameProfile(UUID.randomUUID(), "");
+        profile.getProperties().put("textures", new Property("textures", textureBase64));
+        this.stack.set(DataComponents.PROFILE, new ResolvableProfile(profile));
         return this;
     }
 
