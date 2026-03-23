@@ -9,6 +9,8 @@ import mysavev.mygui.util.ColorUtil;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.Items;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.core.registries.BuiltInRegistries;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -22,7 +24,7 @@ public class MenuEditorScreen extends SimpleGui {
         super(getScreenType(session.getMenuModel().getRows()), session.getPlayer(), false);
         this.session = session;
         this.setTitle(Component.literal("Editing: " + session.getMenuName()));
-        
+        this.setLockPlayerInventory(false);
         render();
     }
     
@@ -54,6 +56,14 @@ public class MenuEditorScreen extends SimpleGui {
             for (int slot : btn.getSlots()) {
                 if (slot < rows * 9) {
                     this.setSlot(slot, builder.build(), (index, clickType, action) -> {
+                        ItemStack cursor = this.player.containerMenu.getCarried();
+                        if (!cursor.isEmpty()) {
+                             updateButtonFromItem(btn, cursor);
+                             session.save();
+                             render();
+                             return;
+                        }
+
                         if (clickType.isRight) {
                             model.getButtons().remove(btnId);
                             session.save(); // Auto-save
@@ -87,13 +97,32 @@ public class MenuEditorScreen extends SimpleGui {
     private void createNewButton(int slot) {
         String newId = "btn_" + System.currentTimeMillis();
         List<String> lore = new ArrayList<>();
-        lore.add("New button");
-        ButtonModel newBtn = new ButtonModel("minecraft:stone", "New Button", lore, List.of(slot), new ArrayList<>());
+        
+        ButtonModel newBtn;
+        ItemStack cursor = this.player.containerMenu.getCarried();
+
+        if (!cursor.isEmpty()) {
+             String material = BuiltInRegistries.ITEM.getKey(cursor.getItem()).toString();
+             String name = ColorUtil.serialize(cursor.getHoverName());
+             lore.add("From Inventory");
+             newBtn = new ButtonModel(material, name, lore, List.of(slot), new ArrayList<>());
+        } else {
+             lore.add("New button");
+             newBtn = new ButtonModel("minecraft:stone", "New Button", lore, List.of(slot), new ArrayList<>());
+        }
+        
         session.getMenuModel().getButtons().put(newId, newBtn);
         session.save(); // Auto-save
         
         render(); // Refresh GUI locally
         new ButtonEditorScreen(session, newBtn, newId).open();
+    }
+    
+    private void updateButtonFromItem(ButtonModel btn, ItemStack stack) {
+        btn.setMaterial(BuiltInRegistries.ITEM.getKey(stack.getItem()).toString());
+        btn.setName(ColorUtil.serialize(stack.getHoverName()));
+        btn.setLore(new ArrayList<>()); 
+        btn.getLore().add("Updated from inventory");
     }
 
     private static MenuType<?> getScreenType(int rows) {
