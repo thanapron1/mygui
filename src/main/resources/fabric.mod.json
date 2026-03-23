@@ -1,0 +1,31 @@
+{
+	"schemaVersion": 1,
+	"id": "fabricmenus",
+	"version": "${version}",
+	"name": "FabricMenus",
+	"description": "Custom Inventory GUIs on Fabric!",
+	"authors": [
+		"Me!"
+	],
+	"contact": {
+		"homepage": "https://fabricmc.net/",
+		"sources": "https://github.com/FabricMC/fabric-example-mod"
+	},
+	"license": "CC0-1.0",
+	"icon": "assets/fabricmenus/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"mysavev.mygui.FabricMenus"
+		],
+		"client": [
+			"mysavev.mygui.FabricMenusClient"
+		]
+	},
+	"depends": {
+		"fabricloader": ">=0.18.4",
+		"minecraft": "~1.21.1",
+		"java": ">=21",
+		"fabric-api": "*"
+	}
+}
