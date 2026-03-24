@@ -18,22 +18,29 @@ public class ClickAction {
         }
     }
 
+    private static String applyPlaceholders(ServerPlayer player, String input) {
+        if (input == null) return "";
+        String name = player.getName().getString();
+        return input
+                .replace("%player_name%", name)
+                .replace("%player%", name);
+    }
+
     private static void parseAndRun(ServerPlayer player, String actionLine) {
         if (actionLine.startsWith("[console] ")) {
-            String cmd = actionLine.substring(10).trim().replace("%player%", player.getName().getString());
+            String cmd = applyPlaceholders(player, actionLine.substring(10).trim());
             player.getServer().getCommands().performPrefixedCommand(player.getServer().createCommandSourceStack(), cmd);
         } else if (actionLine.startsWith("[player] ")) {
-            String cmd = actionLine.substring(9).trim();
+            String cmd = applyPlaceholders(player, actionLine.substring(9).trim());
             player.getServer().getCommands().performPrefixedCommand(player.createCommandSourceStack(), cmd);
         } else if (actionLine.startsWith("[message] ")) {
-            String msg = actionLine.substring(10).trim().replace("&", "§");
+            String msg = applyPlaceholders(player, actionLine.substring(10).trim()).replace("&", "§");
             player.sendSystemMessage(Component.literal(msg));
         } else if (actionLine.startsWith("[opengui] ")) {
-            String menuName = actionLine.substring(10).trim();
+            String menuName = applyPlaceholders(player, actionLine.substring(10).trim());
             MenuManager.openMenu(player, menuName);
         } else if (actionLine.equals("[close]")) {
             player.closeContainer();
         }
     }
 }
-
