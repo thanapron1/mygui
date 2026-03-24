@@ -9,6 +9,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.Items;
 import java.util.ArrayList;
+import java.math.BigDecimal;
 
 public class ButtonEditorScreen extends SimpleGui {
     private final EditorSession session;
@@ -16,7 +17,7 @@ public class ButtonEditorScreen extends SimpleGui {
     private final String buttonId;
 
     public ButtonEditorScreen(EditorSession session, ButtonModel button, String buttonId) {
-        super(MenuType.GENERIC_9x3, session.getPlayer(), false);
+        super(MenuType.GENERIC_9x4, session.getPlayer(), false);
         this.session = session;
         this.button = button;
         this.buttonId = buttonId;
@@ -117,6 +118,48 @@ public class ButtonEditorScreen extends SimpleGui {
             }
         });
 
+    // 14: Economy settings
+    ItemBuilder econ = new ItemBuilder(Items.GOLD_INGOT).setName("§6Economy Settings");
+    econ.addLore("§7Buy Price: §e" + button.getBuyPrice().stripTrailingZeros().toPlainString());
+    econ.addLore("§7Sell Price: §e" + button.getSellPrice().stripTrailingZeros().toPlainString());
+    econ.addLore("§7Allow Buy: " + (button.isAllowBuy() ? "§aTrue" : "§cFalse"));
+    econ.addLore("§7Allow Sell: " + (button.isAllowSell() ? "§aTrue" : "§cFalse"));
+    econ.addLore("");
+    econ.addLore("§a[Left] Toggle Buy");
+    econ.addLore("§c[Right] Toggle Sell");
+    econ.addLore("§e[Shift-Left] Set Buy Price");
+    econ.addLore("§e[Shift-Right] Set Sell Price");
+    this.setSlot(14, econ.build(), (index, type, action) -> {
+      if (type.shift) {
+        boolean settingSell = type.isRight;
+        String prompt = settingSell ? "§eEnter sell price (number):" : "§eEnter buy price (number):";
+        InputHandler.awaitInput(player, Component.literal(prompt), (input) -> {
+          try {
+            BigDecimal val = new BigDecimal(input.replace(",", "")).max(BigDecimal.ZERO);
+            if (settingSell) {
+                button.setSellPrice(val);
+            } else {
+                button.setBuyPrice(val);
+            }
+            session.save();
+            reopen();
+          } catch (NumberFormatException e) {
+            player.sendSystemMessage(Component.literal("§cInvalid number."));
+            reopen();
+          }
+        }, this::open);
+        return;
+      }
+
+      if (type.isRight) {
+        button.setAllowSell(!button.isAllowSell());
+      } else {
+        button.setAllowBuy(!button.isAllowBuy());
+      }
+      session.save();
+      reopen();
+    });
+
         // 19: Amount
         this.setSlot(19, new ItemBuilder(Items.ANVIL).setName("§eSet Amount")
                 .addLore("§7Current: " + button.getAmount())
@@ -192,8 +235,8 @@ public class ButtonEditorScreen extends SimpleGui {
              }
          });
 
-        // 26: Back Button
-        this.setSlot(26, new ItemBuilder(Items.ARROW).setName("§cBack to Menu Editor").build(), (index, type, action) -> {
+        // 35: Back Button (moved to row 4)
+        this.setSlot(35, new ItemBuilder(Items.ARROW).setName("§cBack to Menu Editor").build(), (index, type, action) -> {
              new MenuEditorScreen(session).open();
         });
     }

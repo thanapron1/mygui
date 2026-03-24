@@ -17,6 +17,12 @@ repositories {
 	// See https://docs.gradle.org/current/userguide/declaring_repositories.html
 	// for more information about repositories.
 	maven { url 'https://maven.nucleoid.xyz/' }
+	maven{
+		name 'Impactor Economy'
+		url  "https://maven.impactdev.net/repository/development/"
+	}
+	maven { url 'https://repo.phoenix616.dev/' }
+
 }
 
 loom {
@@ -42,6 +48,10 @@ dependencies {
 	
 	// SGUI
 	modImplementation include("eu.pb4:sgui:1.6.0+1.21")
+
+	implementation("net.impactdev.impactor.api:economy:5.3.5")
+	implementation("net.kyori:event-api:5.0.0-SNAPSHOT")
+
 }
 
 processResources {

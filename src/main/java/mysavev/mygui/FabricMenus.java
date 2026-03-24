@@ -4,6 +4,7 @@ import mysavev.mygui.command.EditorCommand;
 import mysavev.mygui.command.MenuCommand;
 import mysavev.mygui.config.ConfigManager;
 import mysavev.mygui.editor.InputHandler;
+import mysavev.mygui.economy.EconomyServices;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.message.v1.ServerMessageEvents;
 
@@ -21,6 +22,8 @@ public class FabricMenus implements ModInitializer {
 	@Override
 	public void onInitialize() {
 		LOGGER.info("FabricMenus is initializing...");
+		// Trigger classloading early so IDE/loom picks up the package in split source sets.
+		EconomyServices.get();
 		ConfigManager.init();
 		
 		MenuCommand.register();

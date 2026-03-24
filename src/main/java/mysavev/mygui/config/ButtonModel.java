@@ -2,12 +2,23 @@ package mysavev.mygui.config;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.math.BigDecimal;
 
 public class ButtonModel {
     private String material;
     private String name;
     private List<String> lore = new ArrayList<>();
     private int amount = 1;
+
+	// Economy settings (optional)
+	private boolean allowBuy = false;
+	private boolean allowSell = false;
+  /**
+   * Item prices (string-backed for JSON compatibility and exact math).
+   */
+  private String buyPrice = "0";
+  private String sellPrice = "0";
+
     private Integer customModelData;
     private boolean glow;
     private String headTexture;
@@ -97,4 +108,60 @@ public class ButtonModel {
     public void setActions(List<String> actions) {
         this.actions = actions;
     }
+
+  public boolean isAllowBuy() {
+    return allowBuy;
+  }
+
+  public void setAllowBuy(boolean allowBuy) {
+    this.allowBuy = allowBuy;
+  }
+
+  public boolean isAllowSell() {
+    return allowSell;
+  }
+
+  public void setAllowSell(boolean allowSell) {
+    this.allowSell = allowSell;
+  }
+
+  public BigDecimal getBuyPrice() {
+    try {
+      return new BigDecimal(buyPrice == null ? "0" : buyPrice);
+    } catch (Exception e) {
+      return BigDecimal.ZERO;
+    }
+  }
+
+  public void setBuyPrice(BigDecimal buyPrice) {
+    this.buyPrice = (buyPrice == null ? BigDecimal.ZERO : buyPrice).toPlainString();
+  }
+
+  public void setBuyPriceString(String buyPrice) {
+    this.buyPrice = buyPrice;
+  }
+
+  public String getBuyPriceString() {
+    return this.buyPrice;
+  }
+
+  public BigDecimal getSellPrice() {
+    try {
+      return new BigDecimal(sellPrice == null ? "0" : sellPrice);
+    } catch (Exception e) {
+      return BigDecimal.ZERO;
+    }
+  }
+
+  public void setSellPrice(BigDecimal sellPrice) {
+    this.sellPrice = (sellPrice == null ? BigDecimal.ZERO : sellPrice).toPlainString();
+  }
+
+  public void setSellPriceString(String sellPrice) {
+    this.sellPrice = sellPrice;
+  }
+
+  public String getSellPriceString() {
+    return this.sellPrice;
+  }
 }

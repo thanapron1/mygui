@@ -4,6 +4,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.network.chat.Component;
 import mysavev.mygui.gui.MenuManager; // Will be created
 import java.util.List;
+import java.math.BigDecimal;
 
 public class ClickAction {
     
@@ -21,23 +22,39 @@ public class ClickAction {
     private static String applyPlaceholders(ServerPlayer player, String input) {
         if (input == null) return "";
         String name = player.getName().getString();
+    String balance = getBalancePlaceholder(player);
         return input
                 .replace("%player_name%", name)
+                .replace("%balance%", balance)
                 .replace("%player%", name);
     }
 
+  private static String getBalancePlaceholder(ServerPlayer player) {
+    try {
+      BigDecimal bal = mysavev.mygui.economy.EconomyServices.get().getBalance(player);
+      if (bal == null) {
+        return "0";
+      }
+      return bal.stripTrailingZeros().toPlainString();
+    } catch (Throwable ignored) {
+      return "0";
+    }
+  }
+
     private static void parseAndRun(ServerPlayer player, String actionLine) {
+    actionLine = applyPlaceholders(player, actionLine);
+
         if (actionLine.startsWith("[console] ")) {
-            String cmd = applyPlaceholders(player, actionLine.substring(10).trim());
+            String cmd = actionLine.substring(10).trim();
             player.getServer().getCommands().performPrefixedCommand(player.getServer().createCommandSourceStack(), cmd);
         } else if (actionLine.startsWith("[player] ")) {
-            String cmd = applyPlaceholders(player, actionLine.substring(9).trim());
+            String cmd = actionLine.substring(9).trim();
             player.getServer().getCommands().performPrefixedCommand(player.createCommandSourceStack(), cmd);
         } else if (actionLine.startsWith("[message] ")) {
-            String msg = applyPlaceholders(player, actionLine.substring(10).trim()).replace("&", "§");
+            String msg = actionLine.substring(10).trim().replace("&", "§");
             player.sendSystemMessage(Component.literal(msg));
         } else if (actionLine.startsWith("[opengui] ")) {
-            String menuName = applyPlaceholders(player, actionLine.substring(10).trim());
+            String menuName = actionLine.substring(10).trim();
             MenuManager.openMenu(player, menuName);
         } else if (actionLine.equals("[close]")) {
             player.closeContainer();
