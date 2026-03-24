@@ -116,7 +116,7 @@ public class ButtonEditorScreen extends SimpleGui {
                 });
             }
         });
-        
+
         // 19: Amount
         this.setSlot(19, new ItemBuilder(Items.ANVIL).setName("§eSet Amount")
                 .addLore("§7Current: " + button.getAmount())

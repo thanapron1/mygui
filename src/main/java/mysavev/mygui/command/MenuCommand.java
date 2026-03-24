@@ -13,12 +13,6 @@ import net.minecraft.network.chat.Component;
 public class MenuCommand {
     public static void register() {
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
-            dispatcher.register(Commands.literal("logo") // Alias or main command? Request said /menu open, so usually under /menu
-                // But if I split them, they both need to register under "menu". 
-                // Brigadier merges command trees.
-            );
-            
-            // Registering /menu open
             dispatcher.register(Commands.literal("menu")
                 .then(Commands.literal("open")
                     .then(Commands.argument("name", StringArgumentType.string())
@@ -27,7 +21,7 @@ public class MenuCommand {
                     )
                 )
                 .then(Commands.literal("reload")
-                    .requires(source -> source.hasPermission(4))
+                    .requires(PermissionUtil::canReload)
                     .executes(context -> {
                         ConfigManager.loadMenus();
                         context.getSource().sendSuccess(() -> Component.literal("§aMenus reloaded!"), false);
@@ -40,12 +34,19 @@ public class MenuCommand {
 
     private static int openMenu(CommandContext<CommandSourceStack> context) {
         String name = StringArgumentType.getString(context, "name");
-        try {
-            MenuManager.openMenu(context.getSource().getPlayerOrException(), name);
-        } catch (Exception e) {
-            context.getSource().sendFailure(Component.literal("Error: " + e.getMessage()));
+        CommandSourceStack source = context.getSource();
+
+        if (!PermissionUtil.canOpenMenu(source, name)) {
+            source.sendFailure(Component.literal("§cYou do not have permission to open this menu."));
+            return 0;
         }
-        return 1;
+
+        try {
+            MenuManager.openMenu(source.getPlayerOrException(), name);
+            return 1;
+        } catch (Exception e) {
+            source.sendFailure(Component.literal("Error: " + e.getMessage()));
+            return 0;
+        }
     }
 }
-

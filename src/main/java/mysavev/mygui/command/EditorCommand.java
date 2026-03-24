@@ -8,14 +8,13 @@ import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.SharedSuggestionProvider;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.network.chat.Component;
 
 public class EditorCommand {
     public static void register() {
          CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
             dispatcher.register(Commands.literal("menu")
                 .then(Commands.literal("edit")
-                    .requires(source -> source.hasPermission(4))
+                    .requires(PermissionUtil::canUseEditor)
                     .then(Commands.argument("name", StringArgumentType.string())
                         .suggests((context, builder) -> SharedSuggestionProvider.suggest(ConfigManager.getMenuNames(), builder))
                         .executes(context -> {
@@ -27,7 +26,7 @@ public class EditorCommand {
                     )
                 )
                 .then(Commands.literal("editor")
-                    .requires(source -> source.hasPermission(4))
+                    .requires(PermissionUtil::canUseEditor)
                     .executes(context -> {
                          ServerPlayer player = context.getSource().getPlayerOrException();
                          new MainEditorScreen(player).open();
@@ -38,4 +37,3 @@ public class EditorCommand {
         });
     }
 }
-
