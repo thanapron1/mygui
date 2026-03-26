@@ -8,6 +8,8 @@ import mysavev.mygui.util.ItemBuilder;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import java.math.BigDecimal;
 
 public class BaseMenu extends SimpleGui {
@@ -38,6 +40,10 @@ public class BaseMenu extends SimpleGui {
                             boolean handled = tryHandleEconomyClick(player, btn, clickType.isRight);
                             if (!handled) {
                               ClickAction.execute(player, btn.getActions());
+                              // We assume actions always succeed if they have any, or we can just play success sound
+                              if (btn.getActions() != null && !btn.getActions().isEmpty()) {
+                                  player.playNotifySound(SoundEvents.NOTE_BLOCK_PLING.value(), SoundSource.MASTER, 1.0F, 2.0F);
+                              }
                             }
                             if (btn.isCloseOnClick()) {
                                 this.close();
@@ -81,16 +87,19 @@ public class BaseMenu extends SimpleGui {
       BigDecimal bal = mysavev.mygui.economy.EconomyServices.get().getBalance(player);
       if (bal == null) {
         player.sendSystemMessage(net.minecraft.network.chat.Component.literal("§cEconomy not available."));
+        player.playNotifySound(SoundEvents.VILLAGER_NO, SoundSource.MASTER, 1.0F, 1.0F);
         return true;
       }
       if (bal.compareTo(amount) < 0) {
         player.sendSystemMessage(net.minecraft.network.chat.Component.literal("§cNot enough money."));
+        player.playNotifySound(SoundEvents.VILLAGER_NO, SoundSource.MASTER, 1.0F, 1.0F);
         return true;
       }
 
       boolean ok = mysavev.mygui.economy.EconomyServices.get().withdraw(player, amount);
       if (!ok) {
         player.sendSystemMessage(net.minecraft.network.chat.Component.literal("§cTransaction failed."));
+        player.playNotifySound(SoundEvents.VILLAGER_NO, SoundSource.MASTER, 1.0F, 1.0F);
         return true;
       }
 
@@ -98,14 +107,17 @@ public class BaseMenu extends SimpleGui {
         // refund if inventory full
         mysavev.mygui.economy.EconomyServices.get().deposit(player, amount);
         player.sendSystemMessage(net.minecraft.network.chat.Component.literal("§cInventory full."));
+        player.playNotifySound(SoundEvents.VILLAGER_NO, SoundSource.MASTER, 1.0F, 1.0F);
         return true;
       }
       player.sendSystemMessage(net.minecraft.network.chat.Component.literal("§aBought for §e" + price.stripTrailingZeros().toPlainString()));
+      player.playNotifySound(SoundEvents.NOTE_BLOCK_PLING.value(), SoundSource.MASTER, 1.0F, 2.0F);
       return true;
     } else {
       // SELL
       if (!hasAtLeast(player, item, item.getCount())) {
         player.sendSystemMessage(net.minecraft.network.chat.Component.literal("§cNot enough items to sell."));
+        player.playNotifySound(SoundEvents.VILLAGER_NO, SoundSource.MASTER, 1.0F, 1.0F);
         return true;
       }
       removeItems(player, item, item.getCount());
@@ -114,9 +126,11 @@ public class BaseMenu extends SimpleGui {
         // rollback if deposit failed
         player.getInventory().add(item);
         player.sendSystemMessage(net.minecraft.network.chat.Component.literal("§cEconomy not available."));
+        player.playNotifySound(SoundEvents.VILLAGER_NO, SoundSource.MASTER, 1.0F, 1.0F);
         return true;
       }
       player.sendSystemMessage(net.minecraft.network.chat.Component.literal("§aSold for §e" + price.stripTrailingZeros().toPlainString()));
+      player.playNotifySound(SoundEvents.NOTE_BLOCK_PLING.value(), SoundSource.MASTER, 1.0F, 2.0F);
       return true;
     }
   }
