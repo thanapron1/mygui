@@ -35,10 +35,13 @@ public class BaseMenu extends SimpleGui {
                 for (int slot : btn.getSlots()) {
                     if (slot >= 0 && slot < model.getRows() * 9) {
                         this.setSlot(slot, builder.build(), (index, clickType, action) -> {
-            boolean handled = tryHandleEconomyClick(player, btn, clickType.isRight);
-            if (!handled) {
-              ClickAction.execute(player, btn.getActions());
-            }
+                            boolean handled = tryHandleEconomyClick(player, btn, clickType.isRight);
+                            if (!handled) {
+                              ClickAction.execute(player, btn.getActions());
+                            }
+                            if (btn.isCloseOnClick()) {
+                                this.close();
+                            }
                         });
                     }
                 }

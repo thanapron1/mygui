@@ -217,17 +217,17 @@ public class ButtonEditorScreen extends SimpleGui {
          });
 
         // 22: Head Texture
-        this.setSlot(22, new ItemBuilder(Items.PLAYER_HEAD).setName("§eSet Head Texture")
-                .addLore("§7Set Base64 Skin Texture")
-                .addLore("§a[Click to Set]")
-                .addLore("§c[Right-Click to Remove]")
+        this.setSlot(22, new ItemBuilder(Items.PLAYER_HEAD).setName("eSet Head Texture")
+                .addLore("7Set Base64 Skin Texture")
+                .addLore("a[Click to Set]")
+                .addLore("c[Right-Click to Remove]")
                 .build(), (index, type, action) -> {
             if (type.isRight) {
                 button.setHeadTexture(null);
                 session.save();
                 reopen();
              } else {
-                 InputHandler.awaitInput(player, Component.literal("§ePaste Base64 Texture Value:"), (input) -> {
+                 InputHandler.awaitInput(player, Component.literal("ePaste Base64 Texture Value:"), (input) -> {
                      button.setHeadTexture(input);
                      session.save();
                      reopen();
@@ -235,8 +235,18 @@ public class ButtonEditorScreen extends SimpleGui {
              }
          });
 
+        // 23: Close on Click
+        this.setSlot(23, new ItemBuilder(Items.OAK_DOOR).setName("eClose Menu On Click")
+                 .addLore("7Current: " + (button.isCloseOnClick() ? "aTrue" : "cFalse"))
+                 .setGlow(button.isCloseOnClick())
+                 .build(), (index, type, action) -> {
+             button.setCloseOnClick(!button.isCloseOnClick());
+             session.save();
+             reopen();
+         });
+
         // 35: Back Button (moved to row 4)
-        this.setSlot(35, new ItemBuilder(Items.ARROW).setName("§cBack to Menu Editor").build(), (index, type, action) -> {
+        this.setSlot(35, new ItemBuilder(Items.ARROW).setName("cBack to Menu Editor").build(), (index, type, action) -> {
              new MenuEditorScreen(session).open();
         });
     }

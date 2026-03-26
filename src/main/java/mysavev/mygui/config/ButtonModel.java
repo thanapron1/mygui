@@ -21,6 +21,7 @@ public class ButtonModel {
 
     private Integer customModelData;
     private boolean glow;
+    private boolean closeOnClick = false;
     private String headTexture;
     private List<Integer> slots = new ArrayList<>();
     private List<String> actions = new ArrayList<>();
@@ -59,6 +60,14 @@ public class ButtonModel {
 
     public void setGlow(boolean glow) {
         this.glow = glow;
+    }
+
+    public boolean isCloseOnClick() {
+        return closeOnClick;
+    }
+
+    public void setCloseOnClick(boolean closeOnClick) {
+        this.closeOnClick = closeOnClick;
     }
 
     public String getHeadTexture() {
