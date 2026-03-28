@@ -7,6 +7,7 @@ import mysavev.mygui.editor.InputHandler;
 import mysavev.mygui.economy.EconomyServices;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.message.v1.ServerMessageEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,8 +23,10 @@ public class FabricMenus implements ModInitializer {
 	@Override
 	public void onInitialize() {
 		LOGGER.info("FabricMenus is initializing...");
-		// Trigger classloading early so IDE/loom picks up the package in split source sets.
-		EconomyServices.get();
+		ServerLifecycleEvents.SERVER_STARTING.register(server -> {
+			LOGGER.info("Economy: initializing provider on SERVER_STARTING...");
+			EconomyServices.init();
+		});
 		ConfigManager.init();
 		
 		MenuCommand.register();
