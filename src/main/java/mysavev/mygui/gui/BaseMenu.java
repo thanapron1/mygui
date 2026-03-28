@@ -11,10 +11,14 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import java.math.BigDecimal;
+import java.util.HashMap;
+import java.util.Map;
 
 public class BaseMenu extends SimpleGui {
     
     private final MenuModel model;
+    private final Map<String, Long> lastClickTimes = new HashMap<>();
+    private static final long CLICK_DELAY_MS = 250; // 250ms delay between clicks
 
     public BaseMenu(ServerPlayer player, MenuModel model) {
         super(getScreenType(model.getRows()), player, false);
@@ -37,6 +41,14 @@ public class BaseMenu extends SimpleGui {
                 for (int slot : btn.getSlots()) {
                     if (slot >= 0 && slot < model.getRows() * 9) {
                         this.setSlot(slot, builder.build(), (index, clickType, action) -> {
+                            long currentTime = System.currentTimeMillis();
+                            String btnKey = "btn_" + slot;
+                            long lastClick = lastClickTimes.getOrDefault(btnKey, 0L);
+                            if (currentTime - lastClick < CLICK_DELAY_MS) {
+                                return; // Prevent spamming
+                            }
+                            lastClickTimes.put(btnKey, currentTime);
+
                             boolean handled = tryHandleEconomyClick(player, btn, clickType.isRight);
                             if (!handled) {
                               ClickAction.execute(player, btn.getActions());
