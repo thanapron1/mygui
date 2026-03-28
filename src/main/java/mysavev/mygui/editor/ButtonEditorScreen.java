@@ -121,26 +121,25 @@ public class ButtonEditorScreen extends SimpleGui {
     // 14: Economy settings
     ItemBuilder econ = new ItemBuilder(Items.GOLD_INGOT).setName("§6Economy Settings");
     econ.addLore("§7Buy Price: §e" + button.getBuyPrice().stripTrailingZeros().toPlainString());
-    econ.addLore("§7Sell Price: §e" + button.getSellPrice().stripTrailingZeros().toPlainString());
     econ.addLore("§7Allow Buy: " + (button.isAllowBuy() ? "§aTrue" : "§cFalse"));
-    econ.addLore("§7Allow Sell: " + (button.isAllowSell() ? "§aTrue" : "§cFalse"));
     econ.addLore("");
     econ.addLore("§a[Left] Toggle Buy");
-    econ.addLore("§c[Right] Toggle Sell");
     econ.addLore("§e[Shift-Left] Set Buy Price");
-    econ.addLore("§e[Shift-Right] Set Sell Price");
     this.setSlot(14, econ.build(), (index, type, action) -> {
+
       if (type.shift) {
-        boolean settingSell = type.isRight;
-        String prompt = settingSell ? "§eEnter sell price (number):" : "§eEnter buy price (number):";
+        if (type.isRight) {
+          // SELL removed
+          player.sendSystemMessage(Component.literal("§cSell is disabled."));
+          reopen();
+          return;
+        }
+
+        String prompt = "§eEnter buy price (number):";
         InputHandler.awaitInput(player, Component.literal(prompt), (input) -> {
           try {
             BigDecimal val = new BigDecimal(input.replace(",", "")).max(BigDecimal.ZERO);
-            if (settingSell) {
-                button.setSellPrice(val);
-            } else {
-                button.setBuyPrice(val);
-            }
+            button.setBuyPrice(val);
             session.save();
             reopen();
           } catch (NumberFormatException e) {
@@ -151,9 +150,7 @@ public class ButtonEditorScreen extends SimpleGui {
         return;
       }
 
-      if (type.isRight) {
-        button.setAllowSell(!button.isAllowSell());
-      } else {
+      if (!type.isRight) {
         button.setAllowBuy(!button.isAllowBuy());
       }
       session.save();

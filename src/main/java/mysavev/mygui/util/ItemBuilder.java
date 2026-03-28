@@ -9,6 +9,10 @@ import net.minecraft.world.item.component.ItemLore;
 import net.minecraft.world.level.ItemLike;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.core.component.DataComponentPatch;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtOps;
+import net.minecraft.nbt.TagParser;
 
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.properties.Property;
@@ -21,6 +25,19 @@ import java.util.stream.Collectors;
 public class ItemBuilder {
     private final ItemStack stack;
 
+  public static ItemStack create(String itemId, String nbtString) {
+    ItemStack stack = new ItemStack(BuiltInRegistries.ITEM.get(ResourceLocation.parse(itemId)));
+    if (nbtString == null || nbtString.isEmpty()) return stack;
+    try {
+      CompoundTag nbt = TagParser.parseTag(nbtString);
+      DataComponentPatch patch = DataComponentPatch.CODEC.parse(NbtOps.INSTANCE, nbt).getOrThrow();
+      stack.applyComponents(patch);
+    } catch (Exception ignored) {
+      // keep base item if patch is invalid
+    }
+    return stack;
+  }
+
     public ItemBuilder(ItemLike item) {
         this.stack = new ItemStack(item);
     }
@@ -32,6 +49,21 @@ public class ItemBuilder {
     public ItemBuilder(String itemId) {
         this.stack = new ItemStack(BuiltInRegistries.ITEM.get(ResourceLocation.parse(itemId)));
     }
+
+  /**
+   * Applies a data-components patch expressed as an SNBT compound.
+   */
+  public ItemBuilder applyNbt(String nbtString) {
+    if (nbtString == null || nbtString.isEmpty()) return this;
+    try {
+      CompoundTag nbt = TagParser.parseTag(nbtString);
+      DataComponentPatch patch = DataComponentPatch.CODEC.parse(NbtOps.INSTANCE, nbt).getOrThrow();
+      this.stack.applyComponents(patch);
+    } catch (Exception ignored) {
+      // ignore invalid patch
+    }
+    return this;
+  }
 
     public ItemBuilder setName(Component name) {
         this.stack.set(DataComponents.CUSTOM_NAME, name);
@@ -72,7 +104,7 @@ public class ItemBuilder {
     }
 
     public ItemBuilder setCustomModelData(Integer data) {
-        if (data == null) {
+        if (data == null || data == 0) {
             this.stack.remove(DataComponents.CUSTOM_MODEL_DATA);
         } else {
             this.stack.set(DataComponents.CUSTOM_MODEL_DATA, new CustomModelData(data));

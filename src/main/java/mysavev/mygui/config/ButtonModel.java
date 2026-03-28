@@ -6,6 +6,11 @@ import java.math.BigDecimal;
 
 public class ButtonModel {
     private String material;
+    /**
+     * Optional data-components patch in SNBT/CompoundTag string form.
+     * Example (Cobblemon): {cobblemon:pokemon_item:{species:"cobblemon:bulbasaur",aspects:[]}}
+     */
+    private String nbt;
     private String name;
     private List<String> lore = new ArrayList<>();
     private int amount = 1;
@@ -86,6 +91,14 @@ public class ButtonModel {
         this.material = material;
     }
 
+    public String getNbt() {
+        return nbt;
+    }
+
+    public void setNbt(String nbt) {
+        this.nbt = nbt;
+    }
+
     public String getName() {
         return name;
     }
@@ -133,6 +146,7 @@ public class ButtonModel {
   public void setAllowSell(boolean allowSell) {
     this.allowSell = allowSell;
   }
+
 
   public BigDecimal getBuyPrice() {
     try {

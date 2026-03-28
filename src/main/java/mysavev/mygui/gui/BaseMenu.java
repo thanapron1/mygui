@@ -7,18 +7,14 @@ import mysavev.mygui.util.ColorUtil;
 import mysavev.mygui.util.ItemBuilder;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.inventory.MenuType;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
-import java.math.BigDecimal;
-import java.util.HashMap;
-import java.util.Map;
 
 public class BaseMenu extends SimpleGui {
     
     private final MenuModel model;
-    private final Map<String, Long> lastClickTimes = new HashMap<>();
-    private static final long CLICK_DELAY_MS = 250; // 250ms delay between clicks
+    private final ClickGuard clickGuard = new ClickGuard(250);
+    private final EconomyTransactionHandler economyHandler = new EconomyTransactionHandler();
 
     public BaseMenu(ServerPlayer player, MenuModel model) {
         super(getScreenType(model.getRows()), player, false);
@@ -31,8 +27,9 @@ public class BaseMenu extends SimpleGui {
         for (ButtonModel btn : model.getButtons().values()) {
             try {
                 ItemBuilder builder = new ItemBuilder(btn.getMaterial())
+                        .applyNbt(btn.getNbt())
                         .setName(ColorUtil.parse(btn.getName()))
-                        .setLoreStrings(btn.getLore())
+                        .setLoreStrings(withEconomyLore(btn))
                         .setAmount(btn.getAmount())
                         .setCustomModelData(btn.getCustomModelData())
                         .setGlow(btn.isGlow())
@@ -41,15 +38,12 @@ public class BaseMenu extends SimpleGui {
                 for (int slot : btn.getSlots()) {
                     if (slot >= 0 && slot < model.getRows() * 9) {
                         this.setSlot(slot, builder.build(), (index, clickType, action) -> {
-                            long currentTime = System.currentTimeMillis();
                             String btnKey = "btn_" + slot;
-                            long lastClick = lastClickTimes.getOrDefault(btnKey, 0L);
-                            if (currentTime - lastClick < CLICK_DELAY_MS) {
+                            if (!clickGuard.tryAcquire(btnKey)) {
                                 return; // Prevent spamming
                             }
-                            lastClickTimes.put(btnKey, currentTime);
 
-                            boolean handled = tryHandleEconomyClick(player, btn, clickType.isRight);
+                            boolean handled = economyHandler.tryHandle(player, btn, clickType.isRight);
                             if (!handled) {
                               ClickAction.execute(player, btn.getActions());
                               // We assume actions always succeed if they have any, or we can just play success sound
@@ -69,108 +63,21 @@ public class BaseMenu extends SimpleGui {
         }
     }
 
-  /**
-   * Economy logic:
-   * - Left click = buy (if enabled)
-   * - Right click = sell (if enabled)
-   */
-  private boolean tryHandleEconomyClick(ServerPlayer player, ButtonModel btn, boolean rightClick) {
-    boolean isSell = rightClick;
-    if (isSell && !btn.isAllowSell()) return false;
-    if (!isSell && !btn.isAllowBuy()) return false;
+  private static java.util.List<String> withEconomyLore(ButtonModel btn) {
+    java.util.List<String> lore = btn.getLore() != null ? new java.util.ArrayList<>(btn.getLore()) : new java.util.ArrayList<>();
 
-    BigDecimal price = isSell ? btn.getSellPrice() : btn.getBuyPrice();
-    if (price.signum() <= 0) {
-      return false; // Free implies no economy transaction
+    boolean showAny = false;
+    if (btn.isAllowBuy() && btn.getBuyPrice().signum() > 0) {
+      lore.add("§aBuy: §e" + btn.getBuyPrice().stripTrailingZeros().toPlainString());
+      showAny = true;
+    }
+    if (showAny) {
+      lore.add("§7(Left=Buy)");
     }
 
-    ItemStack item = new ItemBuilder(btn.getMaterial())
-        .setName(ColorUtil.parse(btn.getName()))
-        .setLoreStrings(btn.getLore())
-        .setAmount(Math.max(1, btn.getAmount()))
-        .setCustomModelData(btn.getCustomModelData())
-        .setGlow(btn.isGlow())
-        .setHeadTexture(btn.getHeadTexture())
-        .build();
-
-	  BigDecimal amount = price;
-    if (!isSell) {
-      // BUY
-      BigDecimal bal = mysavev.mygui.economy.EconomyServices.get().getBalance(player);
-      if (bal == null) {
-        player.sendSystemMessage(net.minecraft.network.chat.Component.literal("§cEconomy not available."));
-        player.playNotifySound(SoundEvents.VILLAGER_NO, SoundSource.MASTER, 1.0F, 1.0F);
-        return true;
-      }
-      if (bal.compareTo(amount) < 0) {
-        player.sendSystemMessage(net.minecraft.network.chat.Component.literal("§cNot enough money."));
-        player.playNotifySound(SoundEvents.VILLAGER_NO, SoundSource.MASTER, 1.0F, 1.0F);
-        return true;
-      }
-
-      boolean ok = mysavev.mygui.economy.EconomyServices.get().withdraw(player, amount);
-      if (!ok) {
-        player.sendSystemMessage(net.minecraft.network.chat.Component.literal("§cTransaction failed."));
-        player.playNotifySound(SoundEvents.VILLAGER_NO, SoundSource.MASTER, 1.0F, 1.0F);
-        return true;
-      }
-
-      if (!player.getInventory().add(item)) {
-        // refund if inventory full
-        mysavev.mygui.economy.EconomyServices.get().deposit(player, amount);
-        player.sendSystemMessage(net.minecraft.network.chat.Component.literal("§cInventory full."));
-        player.playNotifySound(SoundEvents.VILLAGER_NO, SoundSource.MASTER, 1.0F, 1.0F);
-        return true;
-      }
-      player.sendSystemMessage(net.minecraft.network.chat.Component.literal("§aBought for §e" + price.stripTrailingZeros().toPlainString()));
-      player.playNotifySound(SoundEvents.NOTE_BLOCK_PLING.value(), SoundSource.MASTER, 1.0F, 2.0F);
-      return true;
-    } else {
-      // SELL
-      if (!hasAtLeast(player, item, item.getCount())) {
-        player.sendSystemMessage(net.minecraft.network.chat.Component.literal("§cNot enough items to sell."));
-        player.playNotifySound(SoundEvents.VILLAGER_NO, SoundSource.MASTER, 1.0F, 1.0F);
-        return true;
-      }
-      removeItems(player, item, item.getCount());
-      boolean ok = mysavev.mygui.economy.EconomyServices.get().deposit(player, amount);
-      if (!ok) {
-        // rollback if deposit failed
-        player.getInventory().add(item);
-        player.sendSystemMessage(net.minecraft.network.chat.Component.literal("§cEconomy not available."));
-        player.playNotifySound(SoundEvents.VILLAGER_NO, SoundSource.MASTER, 1.0F, 1.0F);
-        return true;
-      }
-      player.sendSystemMessage(net.minecraft.network.chat.Component.literal("§aSold for §e" + price.stripTrailingZeros().toPlainString()));
-      player.playNotifySound(SoundEvents.NOTE_BLOCK_PLING.value(), SoundSource.MASTER, 1.0F, 2.0F);
-      return true;
-    }
+    return lore;
   }
 
-  private static boolean hasAtLeast(ServerPlayer player, ItemStack want, int count) {
-    int left = count;
-    for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
-      ItemStack s = player.getInventory().getItem(i);
-      if (ItemStack.isSameItemSameComponents(s, want)) {
-        left -= s.getCount();
-        if (left <= 0) return true;
-      }
-    }
-    return false;
-  }
-
-  private static void removeItems(ServerPlayer player, ItemStack want, int count) {
-    int left = count;
-    for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
-      ItemStack s = player.getInventory().getItem(i);
-      if (ItemStack.isSameItemSameComponents(s, want)) {
-        int take = Math.min(left, s.getCount());
-        s.shrink(take);
-        left -= take;
-        if (left <= 0) return;
-      }
-    }
-  }
 
     private static MenuType<?> getScreenType(int rows) {
         return switch (rows) {
